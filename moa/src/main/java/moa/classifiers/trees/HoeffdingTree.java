@@ -15,27 +15,19 @@
  *
  *    You should have received a copy of the GNU General Public License
  *    along with this program. If not, see <http://www.gnu.org/licenses/>.
- *    
+ *
  */
 package moa.classifiers.trees;
 
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
 import com.github.javacliparser.FlagOption;
 import com.github.javacliparser.FloatOption;
 import com.github.javacliparser.IntOption;
 import com.github.javacliparser.MultiChoiceOption;
-import com.github.javacliparser.StringOption;
-
+import com.yahoo.labs.samoa.instances.Instance;
+import com.yahoo.labs.samoa.instances.InstancesHeader;
 import moa.AbstractMOAObject;
-import moa.capabilities.CapabilitiesHandler;
-import moa.capabilities.Capability;
-import moa.capabilities.ImmutableCapabilities;
 import moa.classifiers.AbstractClassifier;
+import moa.classifiers.FeatureScorer;
 import moa.classifiers.MultiClassClassifier;
 import moa.classifiers.bayes.NaiveBayes;
 import moa.classifiers.core.AttributeSplitSuggestion;
@@ -45,13 +37,19 @@ import moa.classifiers.core.attributeclassobservers.NullAttributeClassObserver;
 import moa.classifiers.core.attributeclassobservers.NumericAttributeClassObserver;
 import moa.classifiers.core.conditionaltests.InstanceConditionalTest;
 import moa.classifiers.core.splitcriteria.SplitCriterion;
-import moa.core.AutoExpandVector;
-import moa.core.DoubleVector;
-import moa.core.Measurement;
-import moa.core.SizeOf;
-import moa.core.StringUtils;
-import moa.core.Utils;
+import moa.core.*;
 import moa.options.ClassOption;
+import com.github.javacliparser.StringOption;
+import moa.capabilities.CapabilitiesHandler;
+import moa.capabilities.Capability;
+import moa.capabilities.ImmutableCapabilities;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+import java.util.*;
 import com.yahoo.labs.samoa.instances.Instance;
 
 /**
@@ -88,7 +86,7 @@ import com.yahoo.labs.samoa.instances.Instance;
  * decide</li> <li> -t : Threshold below which a split will be forced to break
  * ties</li> <li> -b : Only allow binary splits</li> <li> -z : Stop growing as
  * soon as memory limit is hit</li> <li> -r : Disable poor attributes</li> <li>
- * -p : Disable pre-pruning</li> 
+ * -p : Disable pre-pruning</li>
  *  <li> -l : Leaf prediction to use: MajorityClass (MC), Naive Bayes (NB) or NaiveBayes
  * adaptive (NBAdaptive).</li>
  *  <li> -q : The number of instances a leaf should observe before
@@ -98,8 +96,7 @@ import com.yahoo.labs.samoa.instances.Instance;
  * @author Richard Kirkby (rkirkby@cs.waikato.ac.nz)
  * @version $Revision: 7 $
  */
-public class HoeffdingTree extends AbstractClassifier implements MultiClassClassifier,
-                                                                 CapabilitiesHandler {
+public class HoeffdingTree extends AbstractClassifier implements MultiClassClassifier, FeatureScorer {
 
     private static final long serialVersionUID = 1L;
 
@@ -108,9 +105,6 @@ public class HoeffdingTree extends AbstractClassifier implements MultiClassClass
         return "Hoeffding Tree or VFDT.";
     }
 
-    public StringOption fixedAttrOption = new StringOption("fixedAttr", 'y',
-            "Atributos fixos.", "");
-    
     public IntOption maxByteSizeOption = new IntOption("maxByteSize", 'm',
             "Maximum memory consumed by the tree.", 33554432, 0,
             Integer.MAX_VALUE);
@@ -159,8 +153,8 @@ public class HoeffdingTree extends AbstractClassifier implements MultiClassClass
             't', "Threshold below which a split will be forced to break ties.",
             0.05, 0.0, 1.0);
 
-public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
-        "Only allow binary splits.");
+    public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
+            "Only allow binary splits.");
 
     public FlagOption stopMemManagementOption = new FlagOption(
             "stopMemManagement", 'z',
@@ -171,6 +165,9 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
 
     public FlagOption noPrePruneOption = new FlagOption("noPrePrune", 'p',
             "Disable pre-pruning.");
+
+    public StringOption fixedAttrOption = new StringOption("fixedAttr", 'y',
+            "Atributos fixos.", "");
 
     public static class FoundNode {
 
@@ -210,7 +207,7 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
         }
 
         public FoundNode filterInstanceToLeaf(Instance inst, SplitNode parent,
-                int parentBranch) {
+                                              int parentBranch) {
             return new FoundNode(this, parent, parentBranch);
         }
 
@@ -227,7 +224,7 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
         }
 
         public void describeSubtree(HoeffdingTree ht, StringBuilder out,
-                int indent) {
+                                    int indent) {
             StringUtils.appendIndented(out, indent, "Leaf ");
             out.append(ht.getClassNameString());
             out.append(" = ");
@@ -262,6 +259,10 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
 
         protected AutoExpandVector<Node> children; // = new AutoExpandVector<Node>();
 
+        public InstanceConditionalTest getNodeInfo(){
+            return this.splitTest;
+        }
+
         @Override
         public int calcByteSize() {
             return super.calcByteSize()
@@ -280,18 +281,14 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
         }
 
         public SplitNode(InstanceConditionalTest splitTest,
-                double[] classObservations, int size) {
+                         double[] classObservations, int size) {
             super(classObservations);
             this.splitTest = splitTest;
             this.children = new AutoExpandVector<Node>(size);
         }
 
-        public InstanceConditionalTest getNodeInfo(){
-            return this.splitTest;
-        }
-
         public SplitNode(InstanceConditionalTest splitTest,
-                double[] classObservations) {
+                         double[] classObservations) {
             super(classObservations);
             this.splitTest = splitTest;
             this.children = new AutoExpandVector<Node>();
@@ -325,7 +322,7 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
 
         @Override
         public FoundNode filterInstanceToLeaf(Instance inst, SplitNode parent,
-                int parentBranch) {
+                                              int parentBranch) {
             int childIndex = instanceChildIndex(inst);
             if (childIndex >= 0) {
                 Node child = getChild(childIndex);
@@ -339,7 +336,7 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
 
         @Override
         public void describeSubtree(HoeffdingTree ht, StringBuilder out,
-                int indent) {
+                                    int indent) {
             for (int branch = 0; branch < numChildren(); branch++) {
                 Node child = getChild(branch);
                 if (child != null) {
@@ -401,7 +398,7 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
         protected double weightSeenAtLastSplitEvaluation;
 
         protected AutoExpandVector<AttributeClassObserver> attributeObservers = new AutoExpandVector<AttributeClassObserver>();
-        
+
         protected boolean isInitialized;
 
         public ActiveLearningNode(double[] initialClassObservations) {
@@ -493,6 +490,8 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
 
     protected boolean growthAllowed;
 
+    protected InstancesHeader header;
+
     public int calcByteSize() {
         int size = (int) SizeOf.sizeOf(this);
         if (this.treeRoot != null) {
@@ -516,7 +515,7 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
         this.activeLeafByteSizeEstimate = 0.0;
         this.byteSizeEstimateOverheadFraction = 1.0;
         this.growthAllowed = true;
-        if (this.leafpredictionOption.getChosenIndex()>0) { 
+        if (this.leafpredictionOption.getChosenIndex() > 0) {
             this.removePoorAttsOption = null;
         }
     }
@@ -524,6 +523,7 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
     @Override
     public void trainOnInstanceImpl(Instance inst) {
         if (this.treeRoot == null) {
+            this.header = (InstancesHeader) inst.dataset();
             this.treeRoot = newLearningNode();
             this.activeLeafNodeCount = 1;
         }
@@ -565,28 +565,28 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
                 leafNode = foundNode.parent;
             }
             return leafNode.getClassVotes(inst, this);
-          } else {
+        } else {
             int numClasses = inst.dataset().numClasses();
             return new double[numClasses];
-          }
+        }
     }
 
     @Override
     protected Measurement[] getModelMeasurementsImpl() {
         return new Measurement[]{
-                    new Measurement("tree size (nodes)", this.decisionNodeCount
-                    + this.activeLeafNodeCount + this.inactiveLeafNodeCount),
-                    new Measurement("tree size (leaves)", this.activeLeafNodeCount
-                    + this.inactiveLeafNodeCount),
-                    new Measurement("active learning leaves",
-                    this.activeLeafNodeCount),
-                    new Measurement("tree depth", measureTreeDepth()),
-                    new Measurement("active leaf byte size estimate",
-                    this.activeLeafByteSizeEstimate),
-                    new Measurement("inactive leaf byte size estimate",
-                    this.inactiveLeafByteSizeEstimate),
-                    new Measurement("byte size estimate overhead",
-                    this.byteSizeEstimateOverheadFraction)};
+                new Measurement("tree size (nodes)", this.decisionNodeCount
+                        + this.activeLeafNodeCount + this.inactiveLeafNodeCount),
+                new Measurement("tree size (leaves)", this.activeLeafNodeCount
+                        + this.inactiveLeafNodeCount),
+                new Measurement("active learning leaves",
+                        this.activeLeafNodeCount),
+                new Measurement("tree depth", measureTreeDepth()),
+                new Measurement("active leaf byte size estimate",
+                        this.activeLeafByteSizeEstimate),
+                new Measurement("inactive leaf byte size estimate",
+                        this.inactiveLeafByteSizeEstimate),
+                new Measurement("byte size estimate overhead",
+                        this.byteSizeEstimateOverheadFraction)};
     }
 
     public int measureTreeDepth() {
@@ -607,22 +607,22 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
     }
 
     public static double computeHoeffdingBound(double range, double confidence,
-            double n) {
+                                               double n) {
         return Math.sqrt(((range * range) * Math.log(1.0 / confidence))
                 / (2.0 * n));
     }
 
     //Procedure added for Hoeffding Adaptive Trees (ADWIN)
     protected SplitNode newSplitNode(InstanceConditionalTest splitTest,
-            double[] classObservations, int size) {
+                                     double[] classObservations, int size) {
         return new SplitNode(splitTest, classObservations, size);
     }
-    
+
     protected SplitNode newSplitNode(InstanceConditionalTest splitTest,
-            double[] classObservations) {
+                                     double[] classObservations) {
         return new SplitNode(splitTest, classObservations);
     }
-    
+
 
     protected AttributeClassObserver newNominalClassObserver() {
         AttributeClassObserver nominalClassObserver = (AttributeClassObserver) getPreparedClassOption(this.nominalEstimatorOption);
@@ -635,7 +635,7 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
     }
 
     protected void attemptToSplit(ActiveLearningNode node, SplitNode parent,
-            int parentIndex) {
+                                  int parentIndex) {
         if (!node.observedClassDistributionIsPure()) {
             SplitCriterion splitCriterion = (SplitCriterion) getPreparedClassOption(this.splitCriterionOption);
             AttributeSplitSuggestion[] bestSplitSuggestions = node.getBestSplitSuggestions(splitCriterion, this);
@@ -651,6 +651,9 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
                 if ((bestSuggestion.merit - secondBestSuggestion.merit > hoeffdingBound)
                         || (hoeffdingBound < this.tieThresholdOption.getValue())) {
                     shouldSplit = true;
+                }
+                if(Double.isInfinite(bestSuggestion.merit)){
+                    shouldSplit = false;
                 }
                 // }
                 if ((this.removePoorAttsOption != null)
@@ -800,12 +803,8 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
         }
     }
 
-    public Node getTreeRoot() {
-        return this.treeRoot;
-    }
-
     protected void deactivateLearningNode(ActiveLearningNode toDeactivate,
-            SplitNode parent, int parentBranch) {
+                                          SplitNode parent, int parentBranch) {
         Node newLeaf = new InactiveLearningNode(toDeactivate.getObservedClassDistribution());
         if (parent == null) {
             this.treeRoot = newLeaf;
@@ -817,7 +816,7 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
     }
 
     protected void activateLearningNode(InactiveLearningNode toActivate,
-            SplitNode parent, int parentBranch) {
+                                        SplitNode parent, int parentBranch) {
         Node newLeaf = newLearningNode(toActivate.getObservedClassDistribution());
         if (parent == null) {
             this.treeRoot = newLeaf;
@@ -835,7 +834,7 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
     }
 
     protected void findLearningNodes(Node node, SplitNode parent,
-            int parentBranch, List<FoundNode> found) {
+                                     int parentBranch, List<FoundNode> found) {
         if (node != null) {
             if (node instanceof LearningNode) {
                 found.add(new FoundNode(node, parent, parentBranch));
@@ -852,16 +851,21 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
 
     public MultiChoiceOption leafpredictionOption = new MultiChoiceOption(
             "leafprediction", 'l', "Leaf prediction to use.", new String[]{
-                "MC", "NB", "NBAdaptive"}, new String[]{
-                "Majority class",
-                "Naive Bayes",
-                "Naive Bayes Adaptive"}, 2);
+            "MC", "NB", "NBAdaptive", "AdaGrad", "NBAdaptiveLog"}, new String[]{
+            "Majority class",
+            "Naive Bayes",
+            "Naive Bayes Adaptive",
+            "AdaGrad", "NBAdaptiveLog"}, 2);
 
     public IntOption nbThresholdOption = new IntOption(
             "nbThreshold",
             'q',
             "The number of instances a leaf should observe before permitting Naive Bayes.",
             0, 0, Integer.MAX_VALUE);
+
+    public Node getTreeRoot() {
+        return this.treeRoot;
+    }
 
     public static class LearningNodeNB extends ActiveLearningNode {
 
@@ -940,10 +944,26 @@ public FlagOption binarySplitsOption = new FlagOption("binarySplits", 'b',
     }
 
     @Override
-    public ImmutableCapabilities defineImmutableCapabilities() {
-      if (this.getClass() == HoeffdingTree.class)
-        return new ImmutableCapabilities(Capability.VIEW_STANDARD, Capability.VIEW_LITE);
-      else
-        return new ImmutableCapabilities(Capability.VIEW_STANDARD);
+    public double[] getFeatureScores() {
+        int maxDepth = this.measureTreeDepth();
+        double scores[] = new double[header.numAttributes() - 1];
+        obtainScore(treeRoot, 0, maxDepth, scores);
+        if(Utils.sum(scores) > 0.0) Utils.normalize(scores);
+        return scores;
     }
+
+    public void obtainScore(Node n, int cDepth, int maxDepth, double scores[]){
+        if(n instanceof SplitNode){
+            InstanceConditionalTest t = ((SplitNode) n).splitTest;
+            int f = ((SplitNode) n).splitTest.getAttsTestDependsOn()[0];
+            if(f==1){
+                int debug = 1;
+            }
+            scores[f] += (maxDepth - 1) - cDepth;
+            for(Node child : ((SplitNode) n).children) {
+                obtainScore(child, cDepth + 1, maxDepth, scores);
+            }
+        }
+    }
+
 }

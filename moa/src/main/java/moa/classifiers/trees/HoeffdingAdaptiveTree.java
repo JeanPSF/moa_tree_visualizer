@@ -15,7 +15,7 @@
  *
  *    You should have received a copy of the GNU General Public License
  *    along with this program. If not, see <http://www.gnu.org/licenses/>.
- *    
+ *
  */
 package moa.classifiers.trees;
 
@@ -85,7 +85,7 @@ public class HoeffdingAdaptiveTree extends HoeffdingTree {
         public void learnFromInstance(Instance inst, HoeffdingAdaptiveTree ht, SplitNode parent, int parentBranch);
 
         public void filterInstanceToLeaves(Instance inst, SplitNode myparent, int parentBranch, List<FoundNode> foundNodes,
-                boolean updateSplitterCounts);
+                                           boolean updateSplitterCounts);
     }
 
     public static class AdaSplitNode extends SplitNode implements NewNode {
@@ -122,15 +122,15 @@ public class HoeffdingAdaptiveTree extends HoeffdingTree {
             }
             return byteSize;
         }
-        
+
         public AdaSplitNode(InstanceConditionalTest splitTest,
-                double[] classObservations, int size) {
+                            double[] classObservations, int size) {
             super(splitTest, classObservations, size);
             this.classifierRandom = new Random(this.randomSeed);
         }
-        
+
         public AdaSplitNode(InstanceConditionalTest splitTest,
-                double[] classObservations) {
+                            double[] classObservations) {
             super(splitTest, classObservations);
             this.classifierRandom = new Random(this.randomSeed);
         }
@@ -279,8 +279,8 @@ public class HoeffdingAdaptiveTree extends HoeffdingTree {
         //New for option votes
         //@Override
         public void filterInstanceToLeaves(Instance inst, SplitNode myparent,
-                int parentBranch, List<FoundNode> foundNodes,
-                boolean updateSplitterCounts) {
+                                           int parentBranch, List<FoundNode> foundNodes,
+                                           boolean updateSplitterCounts) {
             if (updateSplitterCounts) {
                 this.observedClassDistribution.addToValue((int) inst.classValue(), inst.weight());
             }
@@ -430,8 +430,8 @@ public class HoeffdingAdaptiveTree extends HoeffdingTree {
         //New for option votes
         @Override
         public void filterInstanceToLeaves(Instance inst,
-                SplitNode splitparent, int parentBranch,
-                List<FoundNode> foundNodes, boolean updateSplitterCounts) {
+                                           SplitNode splitparent, int parentBranch,
+                                           List<FoundNode> foundNodes, boolean updateSplitterCounts) {
             foundNodes.add(new FoundNode(this, splitparent, parentBranch));
         }
     }
@@ -448,15 +448,15 @@ public class HoeffdingAdaptiveTree extends HoeffdingTree {
         return new AdaLearningNode(initialClassObservations);
     }
 
-   @Override
-    protected SplitNode newSplitNode(InstanceConditionalTest splitTest,
-            double[] classObservations, int size) {
-        return new AdaSplitNode(splitTest, classObservations, size);
-    }
-   
     @Override
     protected SplitNode newSplitNode(InstanceConditionalTest splitTest,
-            double[] classObservations) {
+                                     double[] classObservations, int size) {
+        return new AdaSplitNode(splitTest, classObservations, size);
+    }
+
+    @Override
+    protected SplitNode newSplitNode(InstanceConditionalTest splitTest,
+                                     double[] classObservations) {
         return new AdaSplitNode(splitTest, classObservations);
     }
 
@@ -471,7 +471,7 @@ public class HoeffdingAdaptiveTree extends HoeffdingTree {
 
     //New for options vote
     public FoundNode[] filterInstanceToLeaves(Instance inst,
-            SplitNode parent, int parentBranch, boolean updateSplitterCounts) {
+                                              SplitNode parent, int parentBranch, boolean updateSplitterCounts) {
         List<FoundNode> nodes = new LinkedList<FoundNode>();
         ((NewNode) this.treeRoot).filterInstanceToLeaves(inst, parent, parentBranch, nodes,
                 updateSplitterCounts);
