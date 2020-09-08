@@ -46,6 +46,8 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
 
     protected JPanel treeViewRightPanel = new JPanel();
 
+    protected JPanel treeViewAttrsRelevance = new JPanel();
+
     protected JPanel treeViewPanel = new JPanel();
 
     public JTree treesBreadcrumb = new JTree(new DefaultMutableTreeNode("loading..."));
@@ -132,7 +134,7 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
         }
     }
 
-    private void createTreesSnapshots(Instance inst){
+    private void createTreesSnapshots(){
         if(!treesRoots.isEmpty()) {
             //Initialize array to keep each tree multiple snapshots
             if(treesSnapshots.isEmpty()){
@@ -212,6 +214,10 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
         }
     };
 
+    public void createAttrsImportanceSnapshots(){
+
+    }
+
     /*
     * This is the Frame lifecycle controller
     * */
@@ -238,13 +244,14 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
                 //Ou, quantidade de instancias == insts.size()
                 //Aqui estou recebendo apenas uma isntância, quanto é a quantidade máxima?
                 //Em uso real, seria necessário calcular via Window (Hoeffding Limit)
-                createTreesSnapshots(inst);
+                createTreesSnapshots();
                 renderTreesBreadcrumb();
+                createAttrsImportanceSnapshots();
                 if(activeBreadcrumbTree != -1){
                     renderSlider();
                 }
             }
-            if(treesRoots.size() > 0){
+            /*if(treesRoots.size() > 0){
                 try{
                     //String example = treesRoots.get(0).toString();
                     StringBuilder example2 = new StringBuilder();
@@ -254,7 +261,7 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
                 }
 
             //System.out.println("bla");
-            }
+            }*/
         }
     }
 
@@ -427,19 +434,16 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
         treeViewFrame = new JFrame("treeViewFrame");
         treeViewFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         //Window grid
-        treeViewFrame.setLayout(new GridLayout(1, 2));
+        treeViewFrame.setLayout(new GridLayout(1, 3));
         //Config left Window component
         treeViewLeftPanel = new JPanel();
         treeViewLeftPanel.setLayout(new GridLayout(1, 1));
-        treeViewLeftPanel.setOpaque(true); // content panes must be opaque
-        treeViewLeftPanel.setSize(360, 240);
+        treeViewLeftPanel.setBackground(Color.BLUE);
         treeViewLeftPanel.add(treesBreadcrumb);
         treeViewFrame.add(treeViewLeftPanel);
         //Config right Window component
         treeViewRightPanel = new JPanel();
         treeViewRightPanel.setLayout(new GridLayout(3, 1));
-        treeViewRightPanel.setOpaque(true); // content panes must be opaque
-
         JScrollPane treeScroller = new JScrollPane(treeViewPanel);
         treeScroller.setPreferredSize(new Dimension(350, 150));
         treeViewRightPanel.add(treeScroller);
@@ -455,6 +459,15 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
         treeViewRightPanel.add(detailScroller);
 
         treeViewFrame.add(treeViewRightPanel);
+        //Attrs importance
+        treeViewAttrsRelevance.setLayout(new GridLayout(1, 1));
+
+        //add panel to treeViewAttrsRelevance here
+        //....
+        
+        treeViewFrame.add(treeViewAttrsRelevance);
+
+        treeViewRightPanel = new JPanel();
         // Display the windows
         treeViewFrame.setSize(1280, 720);
         treeViewFrame.setBackground(Color.RED);
