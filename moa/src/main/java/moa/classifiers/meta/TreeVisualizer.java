@@ -37,6 +37,13 @@ import java.text.AttributedCharacterIterator;
 import java.util.*;
 import java.util.List;
 
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.data.category.CategoryDataset;
+import org.jfree.data.category.DefaultCategoryDataset;
+
 public class TreeVisualizer extends AbstractClassifier implements MultiClassClassifier, CapabilitiesHandler {
     Map<Integer, String> instancesHeader = new HashMap<>();
 
@@ -56,6 +63,9 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
 
     public JPanel selectedNodeDetailPanel = new JPanel();
     static JLabel sliderTracker = new JLabel();
+
+    //private final JFXPanel jfxPanel = new JFXPanel();
+
     /*
     * For each tree (List1 of trees)
     * There is a List2
@@ -327,15 +337,30 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
         List<JLabel> attrs = new ArrayList<>();
 
         attrsImportancePanel.removeAll();
+        // Create chart dataset
+        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
 
-        attrsImportancePanel.add(new JLabel("Importâncias dos atributos do slider na posição: " + Integer.toString(activeTreeSnapshot)));
+        //attrsImportancePanel.add(new JLabel("Importâncias dos atributos do slider na posição: " + Integer.toString(activeTreeSnapshot)));
         double[] importances = attrsImportanceSnapshots.get(activeBreadcrumbTree).get(activeTreeSnapshot);
         for(int i = 0; i < importances.length; i++){
             //System.out.println("Loop index: " + i + ". Instance header: " + this.instancesHeader.get(i) + ". Importance: " + Double.toString(importances[i]) + ".");
             JLabel label = new JLabel(this.instancesHeader.get(i) + ": " + Double.toString(importances[i]));
             attrsImportancePanel.add(label);
+            dataset.addValue(importances[i], this.instancesHeader.get(i), this.instancesHeader.get(i));
         }
 
+        //Create chart
+        JFreeChart chart=ChartFactory.createBarChart(
+                "Bar Chart Example", //Chart Title
+                "Year", // Category axis
+                "Population in Million", // Value axis
+                dataset,
+                PlotOrientation.VERTICAL,
+                true,true,false
+        );
+
+        ChartPanel chartPanel = new ChartPanel(chart);
+        attrsImportancePanel.add(chartPanel);
         attrsImportancePanel.revalidate();
         attrsImportancePanel.repaint();
     }
@@ -469,7 +494,7 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
 
     private void renderTreeFrame() {
         //Create new window
-        treeViewFrame = new JFrame("treeViewFrame");
+        //treeViewFrame = new JFrame("treeViewFrame");
         treeViewFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
         //Window grid
         treeViewFrame.setLayout(new GridLayout(1, 3));
