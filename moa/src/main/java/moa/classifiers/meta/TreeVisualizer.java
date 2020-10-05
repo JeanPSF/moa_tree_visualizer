@@ -2,6 +2,7 @@ package moa.classifiers.meta;
 
 import com.github.javacliparser.FlagOption;
 import com.github.javacliparser.IntOption;
+import com.mxgraph.layout.mxIGraphLayout;
 import com.mxgraph.model.mxCell;
 import com.mxgraph.swing.mxGraphComponent;
 import com.mxgraph.view.mxGraph;
@@ -344,8 +345,8 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
         double[] importances = attrsImportanceSnapshots.get(activeBreadcrumbTree).get(activeTreeSnapshot);
         for(int i = 0; i < importances.length; i++){
             //System.out.println("Loop index: " + i + ". Instance header: " + this.instancesHeader.get(i) + ". Importance: " + Double.toString(importances[i]) + ".");
-            JLabel label = new JLabel(this.instancesHeader.get(i) + ": " + Double.toString(importances[i]));
-            attrsImportancePanel.add(label);
+            //JLabel label = new JLabel(this.instancesHeader.get(i) + ": " + Double.toString(importances[i]));
+            //attrsImportancePanel.add(label);
             dataset.addValue(importances[i], this.instancesHeader.get(i), this.instancesHeader.get(i));
         }
 
@@ -355,7 +356,7 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
                 "Year", // Category axis
                 "Population in Million", // Value axis
                 dataset,
-                PlotOrientation.VERTICAL,
+                PlotOrientation.HORIZONTAL,
                 true,true,false
         );
 
@@ -421,12 +422,21 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
                         graph.insertEdge(parent, null, "", vertexList.get(j), vertexList.get(lastSnapshot.get(j).getChildrens().get(k).getId()));
                     }
                 }
+                //mxIGraphLayout layout = new ExtendedCompactTreeLayout(graph);
+                //layout.execute(parent);
             }catch(Exception e) {
                 System.out.println("Erro ao gerar edges: " + e);
             }
         }catch(Exception e){
             System.out.println("Erro ao renderizar a parte gráfica da árvore: " + e);
         }finally{
+            graph.setCellsMovable(false);
+            graph.setCellsBendable(false);
+            graph.setCellsDeletable(false);
+            graph.setCellsEditable(false);
+            graph.setCellsCloneable(false);
+            graph.setCellsDisconnectable(false);
+            graph.setCellsResizable(false);
             graph.getModel().endUpdate();
         }
         //Onde node click
@@ -480,10 +490,9 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
                 DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) breadcrumb.getLastSelectedPathComponent();
                 //System.out.println("selecting breadcrumb: " + selectedNode.getUserObject().toString() + " : " + selectedNode.getUserObject().toString().replaceAll("\\D+",""));
                 activeBreadcrumbTree = Integer.parseInt(selectedNode.getUserObject().toString().replaceAll("\\D+",""));
-                renderTreeViewPanel();
                 renderSlider();
+                renderTreeViewPanel();
 
-                //HERE the tree, slider and node info should be rendered again
             }
         });
         treeViewLeftPanel.removeAll();
@@ -496,43 +505,71 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
         //Create new window
         //treeViewFrame = new JFrame("treeViewFrame");
         treeViewFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
-        //Window grid
-        treeViewFrame.setLayout(new GridLayout(1, 3));
+        //Window
+        JPanel content = new JPanel();
+        content.setLayout(new BoxLayout(content, BoxLayout.X_AXIS));
+        treeViewFrame.setPreferredSize(new Dimension(1920, 1080));
+        content.setBackground(Color.BLUE);
+        treeViewFrame.getContentPane().add(content);
+        Box boxes[] = new Box[3];
+        boxes[0] = Box.createHorizontalBox();
+        boxes[1] = Box.createHorizontalBox();
+        boxes[2] = Box.createHorizontalBox();
+        boxes[0].createGlue();
+        boxes[1].createGlue();
+        boxes[2].createGlue();
+        content.add(boxes[0]);
+        content.add(boxes[1]);
+        content.add(boxes[2]);
+        //treeViewFrame.setLayout(new GridLayout(1, 3));
         //Config left Window component
-        treeViewLeftPanel = new JPanel();
-        treeViewLeftPanel.setLayout(new GridLayout(1, 1));
-        treeViewLeftPanel.setBackground(Color.BLUE);
+        treeViewLeftPanel.setPreferredSize(new Dimension(100,1080));
+        treeViewLeftPanel.setBorder(BorderFactory.createLineBorder(Color.black));
         treeViewLeftPanel.add(treesBreadcrumb);
-        treeViewFrame.add(treeViewLeftPanel);
+        boxes[0].add(treeViewLeftPanel);
         //Config right Window component
-        treeViewRightPanel = new JPanel();
-        treeViewRightPanel.setLayout(new GridLayout(3, 1));
+        //treeViewRightPanel = new JPanel();
+        treeViewRightPanel.setBorder(BorderFactory.createLineBorder(Color.black));
+        //treeViewRightPanel.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
+        treeViewRightPanel.setPreferredSize(new Dimension(1020,1080));
+        //treeViewRightPanel.setBackground(Color.GREEN);
+        boxes[1].add(treeViewRightPanel);
+
+        Box contentBoxes[] = new Box[3];
+        contentBoxes[0] = Box.createHorizontalBox();
+        contentBoxes[1] = Box.createHorizontalBox();
+        contentBoxes[2] = Box.createHorizontalBox();
+        contentBoxes[0].createGlue();
+        contentBoxes[1].createGlue();
+        contentBoxes[2].createGlue();
+        treeViewRightPanel.add(contentBoxes[0]);
+        treeViewRightPanel.add(contentBoxes[1]);
+        treeViewRightPanel.add(contentBoxes[2]);
 
         //Tree visualizer
         JScrollPane treeScroller = new JScrollPane(treeViewPanel);
-        treeScroller.setPreferredSize(new Dimension(350, 150));
-        treeViewRightPanel.add(treeScroller);
+        treeScroller.setPreferredSize(new Dimension(1020, 600));
+        contentBoxes[0].add(treeScroller);
 
         //Slider
         JScrollPane sliderScroller = new JScrollPane(sliderPanel);
-        sliderScroller.setPreferredSize(new Dimension(350, 150));
-        treeViewRightPanel.add(sliderScroller);
+        sliderScroller.setPreferredSize(new Dimension(1020, 100));
+        contentBoxes[1].add(sliderScroller);
 
         //Detail
         JScrollPane detailScroller = new JScrollPane(selectedNodeDetailPanel);
-        detailScroller.setPreferredSize(new Dimension(350, 150));
-        treeViewRightPanel.add(detailScroller);
-
-        treeViewFrame.add(treeViewRightPanel);
+        detailScroller.setPreferredSize(new Dimension(1020, 380));
+        contentBoxes[2].add(detailScroller);
 
         //Attrs importance
         treeViewAttrsRelevance = new JPanel();
-        treeViewAttrsRelevance.setLayout(new BoxLayout(treeViewAttrsRelevance, BoxLayout.Y_AXIS));
+        treeViewAttrsRelevance.setBorder(BorderFactory.createLineBorder(Color.black));
+        treeViewAttrsRelevance.setPreferredSize(new Dimension(800,1080));
+        //treeViewAttrsRelevance.setBackground(Color.YELLOW);
         treeViewAttrsRelevance.add(attrsImportancePanel);
-        treeViewFrame.add(treeViewAttrsRelevance);
+        boxes[2].add(treeViewAttrsRelevance);
 
         // Display the windows
-        treeViewFrame.setSize(1280, 720);
         treeViewFrame.pack();
         treeViewFrame.setLocationByPlatform(true);
         treeViewFrame.setVisible(true);
