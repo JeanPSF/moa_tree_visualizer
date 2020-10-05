@@ -3,6 +3,7 @@ package moa.classifiers.meta;
 import com.github.javacliparser.FlagOption;
 import com.github.javacliparser.IntOption;
 import com.mxgraph.layout.mxIGraphLayout;
+import com.mxgraph.layout.mxCompactTreeLayout;
 import com.mxgraph.model.mxCell;
 import com.mxgraph.swing.mxGraphComponent;
 import com.mxgraph.view.mxGraph;
@@ -89,9 +90,11 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
             "Random Forest Tree.", Classifier.class,
             "trees.HoeffdingTree");
 
-/*    public ClassOption updateTiming = public IntOption maxByteSizeOption = new IntOption("maxByteSize", 'm',
-            "Maximum memory consumed by the tree.", 33554432, 0,
-            Integer.MAX_VALUE);*/
+    public IntOption qttToSnapshot = new IntOption(
+            "minNumInstances",
+            'i',
+            "Quantity of instances to snapshot.",
+            10000, 1, Integer.MAX_VALUE);
 
     public FlagOption visualizeTree = new FlagOption("visualizeTree", 't',
             "Should visually track the trees?");
@@ -272,7 +275,7 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
         arvore.trainOnInstance(inst);
         if(visualizeTree.getStateString() == "true"){
             getTreesRoots();
-            if (instancias%10000 == 0) {
+            if (instancias%qttToSnapshot.getValue() == 0) {
 /*            if(instancias == inst.getAttributesList().size()){
                 System.out.println("última instância.");
             }*/
@@ -352,9 +355,9 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
 
         //Create chart
         JFreeChart chart=ChartFactory.createBarChart(
-                "Bar Chart Example", //Chart Title
-                "Year", // Category axis
-                "Population in Million", // Value axis
+                "", //Chart Title
+                "Attributes", // Category axis
+                "Importance", // Value axis
                 dataset,
                 PlotOrientation.HORIZONTAL,
                 true,true,false
@@ -422,8 +425,8 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
                         graph.insertEdge(parent, null, "", vertexList.get(j), vertexList.get(lastSnapshot.get(j).getChildrens().get(k).getId()));
                     }
                 }
-                //mxIGraphLayout layout = new ExtendedCompactTreeLayout(graph);
-                //layout.execute(parent);
+                mxIGraphLayout layout = new mxCompactTreeLayout(graph);
+                layout.execute(parent);
             }catch(Exception e) {
                 System.out.println("Erro ao gerar edges: " + e);
             }
@@ -548,7 +551,7 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
 
         //Tree visualizer
         JScrollPane treeScroller = new JScrollPane(treeViewPanel);
-        treeScroller.setPreferredSize(new Dimension(1020, 600));
+        treeScroller.setPreferredSize(new Dimension(1020, 800));
         contentBoxes[0].add(treeScroller);
 
         //Slider
@@ -558,7 +561,7 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
 
         //Detail
         JScrollPane detailScroller = new JScrollPane(selectedNodeDetailPanel);
-        detailScroller.setPreferredSize(new Dimension(1020, 380));
+        detailScroller.setPreferredSize(new Dimension(1020, 180));
         contentBoxes[2].add(detailScroller);
 
         //Attrs importance
