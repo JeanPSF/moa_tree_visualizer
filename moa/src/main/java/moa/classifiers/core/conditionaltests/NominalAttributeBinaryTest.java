@@ -47,7 +47,9 @@ public class NominalAttributeBinaryTest extends InstanceConditionalBinaryTest {
                 : this.attIndex + 1;
         return inst.isMissing(instAttIndex) ? -1 : ((int) inst.value(instAttIndex) == this.attValue ? 0 : 1);
     }
-
+    public int getAttValue(){
+        return this.attValue;
+    }
     @Override
     public String describeConditionForBranch(int branch, InstancesHeader context) {
         if ((branch == 0) || (branch == 1)) {

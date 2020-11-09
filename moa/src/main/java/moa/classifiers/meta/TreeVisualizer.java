@@ -1,14 +1,11 @@
 package moa.classifiers.meta;
-
 import com.github.javacliparser.FlagOption;
 import com.github.javacliparser.IntOption;
 import com.mxgraph.layout.mxIGraphLayout;
 import com.mxgraph.layout.mxCompactTreeLayout;
-import com.mxgraph.model.mxCell;
 import com.mxgraph.swing.mxGraphComponent;
 import com.mxgraph.view.mxGraph;
 import com.yahoo.labs.samoa.instances.Instance;
-import moa.MOAObject;
 import moa.capabilities.CapabilitiesHandler;
 import moa.classifiers.AbstractClassifier;
 import moa.classifiers.Classifier;
@@ -18,12 +15,10 @@ import moa.classifiers.core.conditionaltests.NominalAttributeBinaryTest;
 import moa.classifiers.core.conditionaltests.NominalAttributeMultiwayTest;
 import moa.classifiers.core.conditionaltests.NumericAttributeBinaryTest;
 import moa.classifiers.rules.core.conditionaltests.NumericAttributeBinaryRulePredicate;
-import moa.classifiers.trees.ARFHoeffdingTree;
 import moa.classifiers.trees.HoeffdingAdaptiveTree;
 import moa.classifiers.trees.HoeffdingTree;
 import moa.core.Measurement;
 import moa.options.ClassOption;
-
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -31,20 +26,13 @@ import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.geom.Rectangle2D;
-import java.awt.image.ImageObserver;
-import java.text.AttributedCharacterIterator;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.List;
-
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.plot.PlotOrientation;
-import org.jfree.data.category.CategoryDataset;
 import org.jfree.data.category.DefaultCategoryDataset;
 
 public class TreeVisualizer extends AbstractClassifier implements MultiClassClassifier, CapabilitiesHandler {
@@ -92,8 +80,6 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
     static JLabel sliderTracker = new JLabel();
     static JTextArea lastExpectedSnapshot = new JTextArea("Oi");
     public String treesConfirmSnapshots;
-
-
 
     public ClassOption treeLearnerOption = new ClassOption("treeLearner", 'l',
             "Hoeffding Tree.", Classifier.class,
@@ -205,7 +191,7 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
                         } else if(a instanceof NominalAttributeBinaryTest){
                             NominalAttributeBinaryTest n = (NominalAttributeBinaryTest) a;
                             attrIndex = n.attIndex;
-                            teste = "Numeric Attribute Binary test";
+                            teste = ((NominalAttributeBinaryTest) a).getAttValue() + "";
                         } else if(a instanceof NumericAttributeBinaryRulePredicate){
                             NumericAttributeBinaryRulePredicate n = (NumericAttributeBinaryRulePredicate) a;
                             attrIndex = n.attIndex;
@@ -227,15 +213,18 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
                             StringBuilder handler = new StringBuilder("");
                             //nodesToRead.get(0).getDescription(handler, 0);
                             double[] classesValues = nodesToRead.get(0).getObservedClassDistribution();
-                            if(classesValues.length < 2){
+                            if(classesValues.length == 1){
                                 //não possui 2 classes representadas no nó de aprendizagem
-                                System.out.println("Erro aqui!");
-                            }
-                            if(classesValues.length == 2) {
-                                String valor = classesValues[0] > classesValues[1] ? "Class 1" : "Class 2";
-                                currentNode = new FakeNode(nodeId, getNodeType(nodesToRead.get(0)), valor, "{" + String.valueOf(classesValues[0]) + " | " + classesValues[1] + "}");
-                            } else {
-                                currentNode = new FakeNode(nodeId, getNodeType(nodesToRead.get(0)), "Class Undefined", "{" + String.valueOf(classesValues[0]) +  "}");
+                                //System.out.println("Erro aqui!");
+                                currentNode = new FakeNode(nodeId, getNodeType(nodesToRead.get(0)), "", "{" + String.valueOf(classesValues[0]) + "}");
+                            }else {
+                                if (classesValues.length == 2) {
+                                    String valor = classesValues[0] > classesValues[1] ? "Class 1" : "Class 2";
+                                    currentNode = new FakeNode(nodeId, getNodeType(nodesToRead.get(0)), valor, "{" + String.valueOf(classesValues[0]) + " | " + classesValues[1] + "}");
+                                } else {
+                                    String multipleClassesResults = Arrays.toString(classesValues);
+                                    currentNode = new FakeNode(nodeId, getNodeType(nodesToRead.get(0)), "Class Undefined", multipleClassesResults);
+                                }
                             }
                         } else {
                             currentNode = new FakeNode(nodeId, getNodeType(nodesToRead.get(0)));
@@ -481,17 +470,54 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
             try {
                 for (int i = 0; i < lastSnapshot.size(); i++) {
                     DecimalFormat formatter = new DecimalFormat("###.##");
-                    String description = lastSnapshot.get(i).getName() + "\n" + lastSnapshot.get(i).getFakeNodeType();
+                    String description = lastSnapshot.get(i).getName();
                     //get test description
                     if(lastSnapshot.get(i).getFakeNodeType() == FakeNodeType.SPLITNODE){
-                        description = description + "\nTest: <=" + formatter.format(Double.parseDouble(lastSnapshot.get(i).getValue()));
+                        String pseudoValue = lastSnapshot.get(i).getValue();
+                        if(!pseudoValue.contains("val")){
+                            try{
+                                description = description + " ==" + formatter.format(Double.parseDouble(pseudoValue));
+                            }catch(Exception e){
+                                System.out.println("q1?: " + pseudoValue);
+                            }
+                        } else {
+                            System.out.println("q?");
+                        }
                     }
                     if(lastSnapshot.get(i).getFakeNodeType() == FakeNodeType.LEARNINGNODE){
-                        String[] values = lastSnapshot.get(i).getValue().split(" | ");
-                        values[0] = values[0].substring(1);
-                        values[2] = values[2].substring(0, values[2].length()-1);
-                        description = description + "\nClass 1: " + formatter.format(Double.parseDouble(values[0]));
-                        description = description + "\nClass 2: " + formatter.format(Double.parseDouble(values[2]));
+                        String valuesAux = lastSnapshot.get(i).getValue();
+                        if(valuesAux.contains(" | ")){
+                            System.out.println("Tem barra");
+                            String[] values = valuesAux.split(" | ");
+                            if (values.length == 3) {
+                                values[0] = values[0].substring(1);
+                                values[2] = values[2].substring(0, values[2].length() - 1);
+                                if(!values[0].isEmpty()){
+                                    description = description + "\nClass 1: " + formatter.format(Double.parseDouble(values[0]));
+                                }
+                                if(!values[2].isEmpty()) {
+                                    description = description + "\nClass 2: " + formatter.format(Double.parseDouble(values[2]));
+                                }
+                            }
+                        }else {
+                            if(!valuesAux.contains("val")){
+                                System.out.println("Tem val");
+                                System.out.println("testando por virgula");
+                                if(valuesAux.contains(",")){
+                                    System.out.println("Tem virgula");
+                                    description = valuesAux;
+                                } else {
+                                    String[] values = valuesAux.split(" ");
+                                    if (values.length == 1) {
+                                        values[0] = values[0].substring(1);
+                                        values[0] = values[0].substring(0, values[0].length() - 1);
+                                        if (!values[0].isEmpty()) {
+                                            description = description + "Class 1: " + formatter.format(Double.parseDouble(values[0]));
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                     if(lastSnapshot.get(i).getFakeNodeType() == FakeNodeType.LEARNINGNODENB){
                         System.out.println("Tratar");
@@ -502,6 +528,7 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
                     if(lastSnapshot.get(i).getFakeNodeType() == FakeNodeType.LEARNINGNODENBADAPTIVE){
                         System.out.println("Tratar");
                     }
+                    description = description + "\n" + lastSnapshot.get(i).getFakeNodeType();
                     //String nodeContent = lastSnapshot.get(i).getName() + "\n" + lastSnapshot.get(i).getFakeNodeType();
                     Object tempVertex = graph.insertVertex(parent, null, description, x, y, 90, 70, "ROUNDED");
                     vertexList.add(tempVertex);
