@@ -191,7 +191,7 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
                         } else if(a instanceof NominalAttributeBinaryTest){
                             NominalAttributeBinaryTest n = (NominalAttributeBinaryTest) a;
                             attrIndex = n.attIndex;
-                            teste = ((NominalAttributeBinaryTest) a).getAttValue() + "";
+                            teste = "NominalMOAInternal" + ((NominalAttributeBinaryTest) a).getAttValue();
                         } else if(a instanceof NumericAttributeBinaryRulePredicate){
                             NumericAttributeBinaryRulePredicate n = (NumericAttributeBinaryRulePredicate) a;
                             attrIndex = n.attIndex;
@@ -471,17 +471,21 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
                 for (int i = 0; i < lastSnapshot.size(); i++) {
                     DecimalFormat formatter = new DecimalFormat("###.##");
                     String description = lastSnapshot.get(i).getName();
+                    if(lastSnapshot.get(i).getName() == "age"){
+                        System.out.println("Kde o valor disso?");
+                    }
                     //get test description
                     if(lastSnapshot.get(i).getFakeNodeType() == FakeNodeType.SPLITNODE){
                         String pseudoValue = lastSnapshot.get(i).getValue();
-                        if(!pseudoValue.contains("val")){
+                        if(pseudoValue.contains("NominalMOAInternal")){
                             try{
-                                description = description + " ==" + formatter.format(Double.parseDouble(pseudoValue));
+                                String[] testing = pseudoValue.split("NominalMOAInternal");
+                                description = description + " == " + testing[1];
                             }catch(Exception e){
                                 System.out.println("q1?: " + pseudoValue);
                             }
                         } else {
-                            System.out.println("q?");
+                            description = description + " <= " + formatter.format(Double.parseDouble(pseudoValue));
                         }
                     }
                     if(lastSnapshot.get(i).getFakeNodeType() == FakeNodeType.LEARNINGNODE){
@@ -500,20 +504,17 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
                                 }
                             }
                         }else {
-                            if(!valuesAux.contains("val")){
-                                System.out.println("Tem val");
-                                System.out.println("testando por virgula");
-                                if(valuesAux.contains(",")){
-                                    System.out.println("Tem virgula");
-                                    description = valuesAux;
-                                } else {
-                                    String[] values = valuesAux.split(" ");
-                                    if (values.length == 1) {
-                                        values[0] = values[0].substring(1);
-                                        values[0] = values[0].substring(0, values[0].length() - 1);
-                                        if (!values[0].isEmpty()) {
-                                            description = description + "Class 1: " + formatter.format(Double.parseDouble(values[0]));
-                                        }
+                            System.out.println("testando por virgula");
+                            if(valuesAux.contains(",")){
+                                System.out.println("Tem virgula");
+                                description = valuesAux;
+                            } else {
+                                String valueFinal = valuesAux;
+                                if (!valueFinal.isEmpty()) {
+                                    valueFinal = valueFinal.substring(1);
+                                    valueFinal = valueFinal.substring(0, valueFinal.length() - 1);
+                                    if (!valueFinal.isEmpty()) {
+                                        description = description + "Class 1: " + formatter.format(Double.parseDouble(valueFinal));
                                     }
                                 }
                             }
