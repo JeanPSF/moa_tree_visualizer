@@ -491,7 +491,6 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
                     if(lastSnapshot.get(i).getFakeNodeType() == FakeNodeType.LEARNINGNODE){
                         String valuesAux = lastSnapshot.get(i).getValue();
                         if(valuesAux.contains(" | ")){
-                            System.out.println("Tem barra");
                             String[] values = valuesAux.split(" | ");
                             if (values.length == 3) {
                                 values[0] = values[0].substring(1);
@@ -504,9 +503,7 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
                                 }
                             }
                         }else {
-                            System.out.println("testando por virgula");
                             if(valuesAux.contains(",")){
-                                System.out.println("Tem virgula");
                                 description = valuesAux;
                             } else {
                                 String valueFinal = valuesAux;
