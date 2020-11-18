@@ -110,7 +110,6 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
         if(this.treesRoots != null){
             qtt = this.treesRoots.size();
         }
-
         this.treesRoots = new ArrayList<>();
         if (this.arvore instanceof HoeffdingTree) {
             this.treesRoots.add(((HoeffdingTree) this.arvore).getTreeRoot());
@@ -174,7 +173,6 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
                 List<FakeNode> treeSnapshot = new ArrayList<>();
                 List<HoeffdingTree.Node> nodesToRead = new ArrayList<>();
                 nodesToRead.add(treesRoots.get(i));
-                //treesConfirmSnapshots.get(i).add(result.toString());
                 //find all available nodes of a tree
                 int nodeId = 0;
                 while(!nodesToRead.isEmpty()) {
@@ -201,9 +199,9 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
                             attrIndex = n.attIndex;
                             teste = "Nominal Attribute Multiway Test";
                         }
-                        //Algo de ERROR aqui - não é possível renderizar árvores multiway
+                        //Não é possível renderizar árvores multiway
                         currentNode = new FakeNode(nodeId, getNodeType(nodesToRead.get(0)), instancesHeader.get(attrIndex), teste);
-                        //add all childrens to nodesToRead
+                        //Add all childrens to nodesToRead
                         for(int j = 0; j < ((HoeffdingTree.SplitNode) nodesToRead.get(0)).numChildren(); j++){
                             currentNode.addChildrenId(nodesToRead.size() + nodeId);
                             nodesToRead.add(((HoeffdingTree.SplitNode) nodesToRead.get(0)).getChild(j));
@@ -211,11 +209,8 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
                     } else {
                         if (nodesToRead.get(0) instanceof HoeffdingTree.LearningNode){
                             StringBuilder handler = new StringBuilder("");
-                            //nodesToRead.get(0).getDescription(handler, 0);
                             double[] classesValues = nodesToRead.get(0).getObservedClassDistribution();
                             if(classesValues.length == 1){
-                                //não possui 2 classes representadas no nó de aprendizagem
-                                //System.out.println("Erro aqui!");
                                 currentNode = new FakeNode(nodeId, getNodeType(nodesToRead.get(0)), "", "{" + String.valueOf(classesValues[0]) + "}");
                             }else {
                                 if (classesValues.length == 2) {
@@ -258,7 +253,7 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
                 }
                 treesSnapshots.get(i).add(treeSnapshot);
             }
-            //Doesnt render the tree if the user is not looking to the latest state of it
+            //Doesnt re-render the tree if the user is not looking to the latest state of it
             if(treesSnapshots.size() == activeTreeSnapshot){
                 renderTreeViewPanel();
             }
@@ -281,14 +276,6 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
                 if(this.arvore instanceof HoeffdingTree){
                     double[] featuresScores = ((HoeffdingTree) this.arvore).getFeatureScores();
                     attrsImportanceSnapshots.get(i).add(featuresScores);
-                    /*for(int k = 0; k < featuresScores.length; k++){
-                        if(featuresScores.length != k-1){
-                            System.out.print(" - " + featuresScores[k]);
-                        } else {
-                            System.out.println(" - " + featuresScores[k]);
-                        }
-                    }
-                    System.out.println(this.instancesHeader);*/
                 }
 
             }
@@ -315,12 +302,6 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
         if(visualizeTree.getStateString() == "true"){
             getTreesRoots();
             if (instancias%qttToSnapshot.getValue() == 0) {
-/*            if(instancias == inst.getAttributesList().size()){
-                System.out.println("última instância.");
-            }*/
-                //Ou, quantidade de instancias == insts.size()
-                //Aqui estou recebendo apenas uma isntância, quanto é a quantidade máxima?
-                //Em uso real, seria necessário calcular via Window (Hoeffding Limit)
                 createTreesSnapshots();
                 createAttrsImportanceSnapshots();
                 renderTreesBreadcrumb();
@@ -357,12 +338,6 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
         slider.setMajorTickSpacing(20);
         slider.setMinorTickSpacing(1);
         slider.setPaintTicks(true);
-
-        /*Hashtable labelTable = new Hashtable();
-        for(int i = 0; i < this.treesSnapshots.size(); i++){
-            labelTable.put(i, new JLabel(Integer.toString(i)) );
-        }
-        slider.setLabelTable( labelTable );*/
         slider.setPaintLabels(true);
         
         Font font = new Font("Serif", Font.ITALIC, 15);
@@ -374,9 +349,6 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
                 if (!source.getValueIsAdjusting()) {
                     int snapshotToVisualize = (int)source.getValue();
                     activeTreeSnapshot = snapshotToVisualize;
-                    //sliderTracker.setText("Snapshot selected: " + snapshotToVisualize + ".");
-                    //System.out.println("Available snapshots: " + treesSnapshots.get(activeBreadcrumbTree).size());
-                    //System.out.println("Snapshot selected description: " + treesSnapshots.get(activeBreadcrumbTree).get(snapshotToVisualize));
                     renderTreeViewPanel();
                     renderAttrsPanel();
                 }
@@ -389,7 +361,6 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
         aligner.setAlignmentX(Component.CENTER_ALIGNMENT);
         aligner.add(slider);
         sliderPanel.add(aligner);
-        //sliderPanel.add(sliderTracker);
         sliderPanel.revalidate();
         sliderPanel.repaint();
     }
@@ -398,22 +369,14 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
      * Render the attributes Panel
      */
     private void renderAttrsPanel(){
-        //System.out.println("Slider snapshot value form active tree: " + treeSnapshotIndex + ".");
         List<JLabel> attrs = new ArrayList<>();
-
         attrsImportancePanel.removeAll();
         // Create chart dataset
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
-
-        //attrsImportancePanel.add(new JLabel("Importâncias dos atributos do slider na posição: " + Integer.toString(activeTreeSnapshot)));
         double[] importances = attrsImportanceSnapshots.get(activeBreadcrumbTree).get(activeTreeSnapshot);
         for(int i = 0; i < importances.length; i++){
-            //System.out.println("Loop index: " + i + ". Instance header: " + this.instancesHeader.get(i) + ". Importance: " + Double.toString(importances[i]) + ".");
-            //JLabel label = new JLabel(this.instancesHeader.get(i) + ": " + Double.toString(importances[i]));
-            //attrsImportancePanel.add(label);
             dataset.addValue(importances[i], this.instancesHeader.get(i), this.instancesHeader.get(i));
         }
-
         //Create chart
         JFreeChart chart=ChartFactory.createBarChart(
                 "", //Chart Title
@@ -423,7 +386,6 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
                 PlotOrientation.HORIZONTAL,
                 true,true,false
         );
-
         ChartPanel chartPanel = new ChartPanel(chart);
         attrsImportancePanel.add(chartPanel);
         attrsImportancePanel.revalidate();
@@ -456,14 +418,6 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
         try{
             int x = 20;
             int y = 20;
-            //Árvore ativa para visualização
-            //this.treesSnapshots.get(this.activeBreadcrumbTree)
-            //Qntd de snapshots dessa árvore
-            //this.treesSnapshots.get(this.activeBreadcrumbTree).size()
-            //Apresentar a última snapshop disponível
-            //this.treesSnapshots.get(this.activeBreadcrumbTree).get(this.treesSnapshots.get(this.activeBreadcrumbTree).size() - 1)
-            //List<FakeNode> lastSnapshot = this.treesSnapshots.get(this.activeBreadcrumbTree).get(this.treesSnapshots.get(this.activeBreadcrumbTree).size() - 1);
-            //Ao inves de apresentar a última snapshot possível, apresentar o estado ativo do slider
             List<FakeNode> lastSnapshot = this.treesSnapshots.get(this.activeBreadcrumbTree).get(this.activeTreeSnapshot);
 
             List<Object> vertexList = new ArrayList<>();
@@ -471,9 +425,6 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
                 for (int i = 0; i < lastSnapshot.size(); i++) {
                     DecimalFormat formatter = new DecimalFormat("###.##");
                     String description = lastSnapshot.get(i).getName();
-                    if(lastSnapshot.get(i).getName() == "age"){
-                        System.out.println("Kde o valor disso?");
-                    }
                     //get test description
                     if(lastSnapshot.get(i).getFakeNodeType() == FakeNodeType.SPLITNODE){
                         String pseudoValue = lastSnapshot.get(i).getValue();
@@ -527,7 +478,6 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
                         System.out.println("Tratar");
                     }
                     description = description + "\n" + lastSnapshot.get(i).getFakeNodeType();
-                    //String nodeContent = lastSnapshot.get(i).getName() + "\n" + lastSnapshot.get(i).getFakeNodeType();
                     Object tempVertex = graph.insertVertex(parent, null, description, x, y, 90, 70, "ROUNDED");
                     vertexList.add(tempVertex);
                     if (i % 2 == 0) {
@@ -566,42 +516,8 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
             graph.setCellsResizable(false);
             graph.getModel().endUpdate();
         }
-        //Onde node click
-        mxGraphComponent graphView = new mxGraphComponent(graph);
-        //To able the click, setCellsSelectable should be true
-        /*graphView.getGraphControl().addMouseListener(new MouseAdapter(){
-            @Override
-            public void mouseReleased(MouseEvent e) {
-                //Update selected node detail
-                mxCell cell = (mxCell) graphView.getCellAt(e.getX(), e.getY());
-                if(cell != null)
-                {
-                    List<FakeNode> lastSnapshot = treesSnapshots.get(activeBreadcrumbTree).get(treesSnapshots.get(activeBreadcrumbTree).size() - 1);
-                    FakeNode activeNode = lastSnapshot.get(Integer.parseInt(cell.getId()) - 2);
-                    //System.out.println(activeNode);
-                    JPanel newNodeInfo = new JPanel();
-                    newNodeInfo.setLayout(new GridLayout(6+ (activeNode.getChildrens().size() * 2), 2));
-                    newNodeInfo.add(new JLabel("Label: "));
-                    newNodeInfo.add(new JLabel(activeNode.getName()));
-                    newNodeInfo.add(new JLabel("Teste: "));
-                    newNodeInfo.add(new JLabel(activeNode.getValue()));
-                    newNodeInfo.add(new JLabel("Childrens: "));
-                    newNodeInfo.add(new JLabel(""));
-                    List<FakeNode> childrens = activeNode.getChildrens();
-                    for(int j = 0; j < childrens.size(); j++){
-                        newNodeInfo.add(new JLabel("Label: "));
-                        newNodeInfo.add(new JLabel(childrens.get(j).getName()));
-                        newNodeInfo.add(new JLabel("Teste: "));
-                        newNodeInfo.add(new JLabel(childrens.get(j).getValue()));
-                    }
-                    selectedNodeDetailPanel.removeAll();
-                    selectedNodeDetailPanel.add(newNodeInfo);
-                    selectedNodeDetailPanel.revalidate();
-                    selectedNodeDetailPanel.repaint();
-                }
-            }
-        });*/
 
+        mxGraphComponent graphView = new mxGraphComponent(graph);
         treeViewPanel.removeAll();
         treeViewPanel.add(graphView);
         treeViewPanel.revalidate();
@@ -623,7 +539,6 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
             @Override
             public void valueChanged(TreeSelectionEvent e) {
                 DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) breadcrumb.getLastSelectedPathComponent();
-                //System.out.println("selecting breadcrumb: " + selectedNode.getUserObject().toString() + " : " + selectedNode.getUserObject().toString().replaceAll("\\D+",""));
                 activeBreadcrumbTree = Integer.parseInt(selectedNode.getUserObject().toString().replaceAll("\\D+",""));
                 renderSlider();
                 renderTreeViewPanel();
@@ -641,13 +556,11 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
      */
     private void renderTreeFrame() {
         //Create new window
-        //treeViewFrame = new JFrame("treeViewFrame");
         treeViewFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
         //Window
         JPanel content = new JPanel();
         content.setLayout(new BoxLayout(content, BoxLayout.X_AXIS));
         treeViewFrame.setPreferredSize(new Dimension(1920, 1080));
-        //content.setBackground(Color.BLUE);
         treeViewFrame.getContentPane().add(content);
         Box boxes[] = new Box[3];
         boxes[0] = Box.createHorizontalBox();
@@ -659,31 +572,21 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
         content.add(boxes[0]);
         content.add(boxes[1]);
         content.add(boxes[2]);
-        //treeViewFrame.setLayout(new GridLayout(1, 3));
         //Config left Window component
         treeViewLeftPanel.setPreferredSize(new Dimension(100,1080));
         //treeViewLeftPanel.setBorder(BorderFactory.createLineBorder(Color.black));
         treeViewLeftPanel.add(treesBreadcrumb);
         boxes[0].add(treeViewLeftPanel);
         //Config right Window component
-        //treeViewRightPanel = new JPanel();
-        //treeViewRightPanel.setBorder(BorderFactory.createLineBorder(Color.black));
-        //treeViewRightPanel.setLayout(new BoxLayout(content, BoxLayout.Y_AXIS));
         treeViewRightPanel.setPreferredSize(new Dimension(1120,1080));
-        //treeViewRightPanel.setBorder(BorderFactory.createLineBorder(Color.black));
-        //treeViewRightPanel.setBackground(Color.GREEN);
         boxes[1].add(treeViewRightPanel);
-
         Box contentBoxes[] = new Box[2];
         contentBoxes[0] = Box.createHorizontalBox();
         contentBoxes[1] = Box.createHorizontalBox();
-        //contentBoxes[2] = Box.createHorizontalBox();
         contentBoxes[0].createGlue();
         contentBoxes[1].createGlue();
-        //[2].createGlue();
         treeViewRightPanel.add(contentBoxes[0]);
         treeViewRightPanel.add(contentBoxes[1]);
-        //treeViewRightPanel.add(contentBoxes[2]);
 
         //Tree visualizer
         JScrollPane treeScroller = new JScrollPane(treeViewPanel);
@@ -695,32 +598,16 @@ public class TreeVisualizer extends AbstractClassifier implements MultiClassClas
         sliderScroller.setPreferredSize(new Dimension(1120, 100));
         contentBoxes[1].add(sliderScroller);
 
-        //Detail
-        /*JScrollPane detailScroller = new JScrollPane(selectedNodeDetailPanel);
-        detailScroller.setPreferredSize(new Dimension(1020, 180));
-        contentBoxes[2].add(detailScroller);*/
-
         //Attrs importance
-        //treeViewAttrsRelevance = new JPanel();
-        //treeViewAttrsRelevance.setBorder(BorderFactory.createLineBorder(Color.black));
         treeViewAttrsRelevance.setPreferredSize(new Dimension(700,1080));
-        //treeViewAttrsRelevance.setBorder(BorderFactory.createLineBorder(Color.black));
-
         boxes[2].add(treeViewAttrsRelevance);
 
         Box detailsBoxes[] = new Box[2];
         detailsBoxes[0] = Box.createHorizontalBox();
-        //detailsBoxes[1] = Box.createHorizontalBox();
         detailsBoxes[0].createGlue();
-        //detailsBoxes[1].createGlue();
         treeViewAttrsRelevance.add(detailsBoxes[0]);
-        //treeViewAttrsRelevance.add(detailsBoxes[1]);
-
         attrsImportancePanel.setPreferredSize(new Dimension(800, 800));
-
         detailsBoxes[0].add(attrsImportancePanel);
-        //lastExpectedSnapshot.setSize(new Dimension(800, 280));
-        //detailsBoxes[1].add(lastExpectedSnapshot);
 
         // Display the windows
         treeViewFrame.pack();
